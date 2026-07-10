@@ -1,1 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kindle出版リサーチガイド</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f3ff;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:1rem}
+.app{background:#fff;border-radius:16px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08)}
+.hdr{padding:1.25rem 1rem 0.75rem;border-bottom:1px solid #eee}
+.hdr-title{font-size:17px;font-weight:500;color:#1a1a1a;margin:0 0 3px}
+.hdr-sub{font-size:13px;color:#888;margin:0}
+.step-wrap{padding:1rem}
+.step-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:3px 10px;border-radius:20px;background:#EEEDFE;color:#3C3489;margin-bottom:10px}
+.step-title{font-size:15px;font-weight:500;color:#1a1a1a;margin:0 0 8px}
+.step-desc{font-size:13px;color:#666;line-height:1.6;margin:0 0 12px}
+.guide-box{background:#f8f8f8;border:1px solid #eee;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem}
+.guide-label{font-size:12px;color:#888;margin:0 0 6px}
+.guide-text{font-size:14px;color:#1a1a1a;font-weight:500;margin:0}
+.genre-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.gbtn{padding:10px 8px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-size:13px;cursor:pointer;text-align:center}
+.gbtn.on{background:#EEEDFE;border-color:#7F77DD;color:#3C3489;font-weight:500}
+.other-input{width:100%;padding:8px 12px;border-radius:8px;border:1px solid #ddd;font-size:14px;margin-bottom:1rem;display:none}
+.other-input.show{display:block}
+.title-inputs{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem}
+.ti{width:100%;padding:8px 12px;border-radius:8px;border:1px solid #ddd;font-size:14px}
+.input-label{font-size:13px;color:#666;margin:0 0 6px;display:block}
+.next-btn{width:100%;padding:11px;border-radius:8px;border:none;background:#534AB7;color:#fff;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:8px}
+.next-btn:disabled{opacity:0.4;cursor:not-allowed}
+.sec-btn{width:100%;padding:11px;border-radius:8px;border:1px solid #534AB7;background:#fff;color:#534AB7;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:8px}
+.result-card{background:#f8f8f8;border:1px solid #eee;border-radius:12px;padding:1rem 1.25rem;margin-bottom:10px}
+.result-tag{font-size:11px;font-weight:500;padding:3px 8px;border-radius:20px;background:#E1F5EE;color:#085041;margin-bottom:8px;display:inline-block}
+.result-title{font-size:14px;font-weight:500;color:#1a1a1a;margin:0 0 6px}
+.result-body{font-size:13px;color:#666;line-height:1.6;margin:0}
+.kw-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.kw{font-size:12px;padding:4px 10px;border-radius:20px;background:#EEEDFE;color:#3C3489;cursor:pointer;border:none}
+.restart-btn{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#666;font-size:13px;cursor:pointer;margin-top:4px}
+.progress{display:flex;gap:6px;margin-bottom:1rem}
+.pdot{width:8px;height:8px;border-radius:50%;background:#ddd}
+.pdot.done{background:#534AB7}
+.pdot.active{background:#AFA9EC}
+.divider{border:none;border-top:1px solid #eee;margin:1rem 0}
+.analysis-input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #ddd;font-size:13px;min-height:80px;resize:vertical;margin-bottom:8px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#534AB7;color:#fff;padding:6px 16px;border-radius:20px;font-size:13px;z-index:999;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <p class="hdr-title">📚 Kindle出版リサーチガイド</p>
+    <p class="hdr-sub">テーマ探し・分析をステップでサポート</p>
+  </div>
+  <div class="step-wrap" id="mainArea"></div>
+</div>
+<script>
+var step=0,selGenre='',otherText='',titles=['','',''];
+var genreList=[
+  {id:'塗り絵',label:'大人の塗り絵',search:'大人の塗り絵'},
+  {id:'絵本',label:'子ども向け絵本',search:'子ども絵本'},
+  {id:'図鑑',label:'図鑑風イラスト集',search:'イラスト図鑑'},
+  {id:'作品集',label:'イラスト作品集',search:'イラスト集'},
+  {id:'その他',label:'✏️ その他',search:''}
+];
+var keywordDB={
+  '塗り絵':{popular:['花','猫','マンダラ','動物','風景'],niche:['着物・和風','北欧','ボタニカル','神話・ファンタジー','食べ物'],angle:'「和風・着物」「ボタニカル」など日本らしさを活かしたテーマは競合が少なく狙い目です。',keywords:['大人の塗り絵','ぬりえ','coloring book','リラックス','癒し','手描き風','線画'],
+    reasons:['線の細かさと美しさ','ページ数が多くてお得感がある','テーマが明確でギフトに選びやすい','表紙が目を引くデザイン','レビューで「塗りやすい」と評価されている'],
+    copy:['線の太さ・細かさを表紙や説明文で伝える','ページ数を明記する（例：50ページ収録）','ギフト需要を意識したタイトルにする','日本らしいテーマで差別化する']},
+  '絵本':{popular:['どうぶつ','のりもの','ひらがな','かぞえる','おやすみ'],niche:['赤ちゃんへのメッセージ','兄弟・姉妹','二か国語','季節の行事','感情を学ぶ'],angle:'「ママへ・パパへ」「生まれてくる赤ちゃんへ」など感情に寄り添うテーマは親御さんに刺さります。',keywords:['絵本','えほん','読み聞かせ','知育','子ども','赤ちゃん','プレゼント'],
+    reasons:['読み聞かせに使いやすいシンプルな文章','イラストが温かみがある','プレゼントとして選びやすいテーマ','子どもが喜ぶ明るい色使い','短くて読みやすいページ数'],
+    copy:['「読み聞かせに最適」を説明文に入れる','温かみのある表紙で感情に訴える','プレゼント需要を意識したタイトルにする','対象年齢を明記する']},
+  '図鑑':{popular:['花・植物','昆虫','恐竜','魚','宇宙'],niche:['日本の伝統文様','野草・山野草','深海生物','絶滅危惧種','郷土料理'],angle:'「日本の伝統文様」「郷土料理」など日本ならではのニッチな図鑑は競合がほぼいません。',keywords:['図鑑','イラスト図鑑','かわいい','手描き','AI art','コレクション'],
+    reasons:['テーマが明確でコレクター心をくすぐる','イラストのクオリティが高い','ニッチなテーマで競合が少ない','情報量が多くてお得感がある','インテリアとしても使える'],
+    copy:['テーマを絞って専門性をアピールする','コレクション要素を説明文に入れる','イラストのこだわりを伝える','「○○図鑑」と明確なタイトルにする']},
+  '作品集':{popular:['ファンタジー','花','女の子','風景','動物'],niche:['着物・和装','ヒーリングアート','夢絵','星座・占い','四季'],angle:'「ヒーリングアート」「夢絵」など作家性の強い作品集はSNSと連動させると売れやすいです。',keywords:['イラスト集','作品集','AI art','アート','デジタルアート','ポートフォリオ'],
+    reasons:['作家の世界観が一貫している','SNSでの知名度と連動している','テーマが独自で他にない','印刷品質が高くインテリアになる','ファンが購入しやすい価格帯'],
+    copy:['作家としての世界観をタイトルで表現する','SNSと連動させて認知を広げる','独自テーマを前面に出す','インテリアとして飾れることをアピールする']},
+  'その他':{popular:['定番テーマ','季節もの','日本文化','動物','自然'],niche:['ニッチなテーマ','地域・郷土','体験・記録','メッセージ性のあるもの','コレクション系'],angle:'あなたのジャンルで「まだ誰も作っていないもの」を狙うのが売れるコツです。',keywords:['Amazon KDP','Kindle出版','イラスト','AI art','日本語','プレゼント','ギフト'],
+    reasons:['テーマが明確でターゲットが絞れている','タイトルにキーワードが入っている','表紙が目を引く','説明文が読者の悩みに答えている','ページ数・価格のバランスが良い'],
+    copy:['ターゲット読者を明確にする','検索されやすいキーワードをタイトルに入れる','説明文で読者のメリットを伝える','表紙に力を入れる']}
+};
 
+function getSearchWord(){return selGenre==='その他'?(otherText||'イラスト本'):(genreList.find(function(x){return x.id===selGenre;})||{search:''}).search;}
+function getDisplayName(){return selGenre==='その他'?(otherText||'その他'):(genreList.find(function(x){return x.id===selGenre;})||{label:''}).label.replace('✏️ ','');}
+function prog(total){
+  var h='<div class="progress">';
+  for(var i=0;i<total;i++)h+='<div class="pdot '+(i<step?'done':i===step?'active':'')+'"></div>';
+  return h+'</div>';
+}
+
+function render(){
+  var area=document.getElementById('mainArea');
+  if(step===0){
+    area.innerHTML=prog(4)+
+      '<div class="step-badge">① ジャンルを選ぶ</div>'+
+      '<p class="step-title">どんな本を作りますか？</p>'+
+      '<p class="step-desc">ジャンルを選んでください。</p>'+
+      '<div class="genre-grid">'+genreList.map(function(g){return '<button class="gbtn'+(selGenre===g.id?' on':'')+'" onclick="pickGenre(\''+g.id+'\')">'+g.label+'</button>';}).join('')+'</div>'+
+      '<input class="other-input'+(selGenre==='その他'?' show':'')+'" id="otherInput" type="text" placeholder="例：写真集・ノート・漫画など" value="'+otherText+'" oninput="saveOther(this.value)">'+
+      '<button class="next-btn" id="nextBtn" onclick="goStep(1)" '+((selGenre&&(selGenre!=='その他'||otherText))?'':'disabled')+'>次へ →</button>';
+
+  } else if(step===1){
+    area.innerHTML=prog(4)+
+      '<div class="step-badge">② Amazonでリサーチ</div>'+
+      '<p class="step-title">Amazonで検索してみよう</p>'+
+      '<div class="guide-box"><p class="guide-label">🔍 このキーワードで検索</p><p class="guide-text">「'+getSearchWord()+'」</p></div>'+
+      '<p class="step-desc">ベストセラー上位の本を3〜5冊チェックしてください。タイトル・表紙・レビュー数を見てみましょう。</p>'+
+      '<p class="step-desc">気になった本のタイトルを入れてください👇</p>'+
+      '<span class="input-label">気になった本のタイトルを3つ入力</span>'+
+      '<div class="title-inputs">'+
+      '<input class="ti" type="text" placeholder="タイトル1" value="'+titles[0]+'" oninput="saveTitle(0,this.value)">'+
+      '<input class="ti" type="text" placeholder="タイトル2" value="'+titles[1]+'" oninput="saveTitle(1,this.value)">'+
+      '<input class="ti" type="text" placeholder="タイトル3（任意）" value="'+titles[2]+'" oninput="saveTitle(2,this.value)">'+
+      '</div>'+
+      '<button class="next-btn" id="nextBtn2" onclick="goStep(2)" '+(titles[0]&&titles[1]?'':'disabled')+'>テーマ候補を見る →</button>'+
+      '<button class="restart-btn" onclick="goStep(0)">← 戻る</button>';
+
+  } else if(step===2){
+    var db=keywordDB[selGenre];
+    area.innerHTML=prog(4)+
+      '<div class="step-badge">③ テーマ候補</div>'+
+      '<p class="step-title">「'+getDisplayName()+'」のリサーチ結果</p>'+
+      '<div class="result-card"><span class="result-tag">📊 定番テーマ</span><p class="result-title">人気のテーマ</p><div class="kw-wrap">'+db.popular.map(function(k){return '<span class="kw">'+k+'</span>';}).join('')+'</div></div>'+
+      '<div class="result-card"><span class="result-tag" style="background:#FAEEDA;color:#633806">💡 ニッチ狙い</span><p class="result-title">競合が少ないテーマ候補</p><div class="kw-wrap">'+db.niche.map(function(k){return '<span class="kw" style="background:#FAEEDA;color:#633806">'+k+'</span>';}).join('')+'</div></div>'+
+      '<div class="result-card"><span class="result-tag" style="background:#E1F5EE;color:#085041">💬 アドバイス</span><p class="result-body">'+db.angle+'</p></div>'+
+      '<div class="result-card"><span class="result-tag" style="background:#FAECE7;color:#4A1B0C">🏷️ KDPキーワード候補</span><p class="result-title">タップでコピー</p><div class="kw-wrap">'+db.keywords.map(function(k){return '<button class="kw" onclick="copyKw(\''+k+'\')">'+k+'</button>';}).join('')+'</div></div>'+
+      '<hr class="divider">'+
+      '<button class="next-btn" onclick="goStep(3)">📈 売れてる理由を分析する →</button>'+
+      '<button class="restart-btn" onclick="restart()">🔄 最初からやり直す</button>';
+
+  } else if(step===3){
+    var db=keywordDB[selGenre];
+    area.innerHTML=prog(4)+
+      '<div class="step-badge">④ 売れてる理由を分析</div>'+
+      '<p class="step-title">なぜ売れているのか？</p>'+
+      '<div class="result-card"><span class="result-tag">🏆 売れてる理由</span><p class="result-title">「'+getDisplayName()+'」でよく見られる要因</p>'+
+      '<ul style="font-size:13px;color:#444;line-height:2;padding-left:1.2rem;margin-top:8px">'+
+      db.reasons.map(function(r){return '<li>'+r+'</li>';}).join('')+
+      '</ul></div>'+
+      '<div class="result-card"><span class="result-tag" style="background:#FAEEDA;color:#633806">✏️ あなたの本に活かすポイント</span>'+
+      '<ul style="font-size:13px;color:#444;line-height:2;padding-left:1.2rem;margin-top:8px">'+
+      db.copy.map(function(c){return '<li>'+c+'</li>';}).join('')+
+      '</ul></div>'+
+      '<div class="result-card" style="background:#EEEDFE;border-color:#AFA9EC">'+
+      '<p class="result-title" style="color:#3C3489;margin-bottom:8px">📝 調べた本の特徴をメモしよう</p>'+
+      '<textarea class="analysis-input" id="memoArea" placeholder="例）猫の塗り絵・50ページ・表紙がカラフル・レビュー200件・価格1500円など自由にメモ"></textarea>'+
+      '<p style="font-size:12px;color:#7F77DD">↑ Amazonで見た本の特徴を入力すると、比較しやすくなります</p>'+
+      '</div>'+
+      '<button class="restart-btn" onclick="goStep(2)">← テーマ候補に戻る</button>'+
+      '<button class="restart-btn" onclick="restart()" style="margin-top:8px">🔄 最初からやり直す</button>';
+  }
+}
+
+function pickGenre(id){selGenre=id;render();if(id==='その他'){var el=document.getElementById('otherInput');if(el)el.focus();}}
+function saveOther(val){otherText=val;var btn=document.getElementById('nextBtn');if(btn)btn.disabled=!(selGenre&&(selGenre!=='その他'||val));}
+function saveTitle(i,val){titles[i]=val;var btn=document.getElementById('nextBtn2');if(btn)btn.disabled=!(titles[0]&&titles[1]);}
+function goStep(s){step=s;render();}
+function restart(){step=0;selGenre='';otherText='';titles=['','',''];render();}
+function copyKw(text){
+  navigator.clipboard.writeText(text).catch(function(){});
+  var t=document.createElement('div');t.className='toast';t.textContent='「'+text+'」をコピーしました';
+  document.body.appendChild(t);setTimeout(function(){t.remove();},1500);
+}
+render();
+</script>
+</body>
+</html>
